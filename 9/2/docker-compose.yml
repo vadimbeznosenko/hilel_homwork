@@ -1,0 +1,8 @@
+version: '3'
+
+services:
+  api:
+    build: ./api
+    command: npm run start
+    ports:
+      - "4100:4100"

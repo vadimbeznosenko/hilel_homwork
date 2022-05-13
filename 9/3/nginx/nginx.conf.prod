@@ -1,0 +1,9 @@
+server {
+  listen 80;
+
+  resolver 127.0.0.1;
+
+  location / {
+    proxy_pass http://frontend:4100;
+  }
+}

@@ -8,6 +8,8 @@ COPY *.json ./
 
 RUN npm i
 
+RUN npm install express
+
 USER sax4
 
 WORKDIR /usr/src/app/
@@ -15,10 +17,7 @@ WORKDIR /usr/src/app/
 COPY . .
 
 ADD --chown=sax4 . /usr/src/app/build
-
+#********
 RUN npm run build
 
 CMD ["node", "run start"]
-
-
-

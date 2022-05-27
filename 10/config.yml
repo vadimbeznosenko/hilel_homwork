@@ -1,0 +1,133 @@
+---
+- name: Preconfig
+  hosts: linux1
+  tasks:
+    - name: Утановка Docker
+      block:
+        - name: Добавляем universe
+          apt_repository:
+            repo: "deb http://us.archive.ubuntu.com/ubuntu/ {{ ansible_distribution_release }} universe"
+            state: present
+
+        - name: Установка дополнительных пакетов
+          apt:
+            name:
+              - apt-transport-https
+              - ca-certificates
+              - curl
+              - gnupg
+              - lsb-release
+              - git
+              - curl
+              - software-properties-common
+              - wget
+              - libasound2
+            update-cache: yes
+            cache_valid_time: 86400
+
+        - name: Добавление ключа Docker
+          apt_key:
+            url: https://download.docker.com/linux/ubuntu/gpg
+            state: present
+
+        - name: Установка стабильного репозитория
+          shell: add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+
+       
+        - name: Обновляем cache
+          apt:
+            update_cache: yes
+        - name: Установка Docker
+          apt:
+            name: 
+              - docker-ce
+              - docker-ce-cli
+              - containerd.io
+#               -docker-compose-plugin
+            update-cache: yes
+
+        - name: Проверка что Docker установлен и перезагружен
+          service:
+            name: docker
+            state: restarted
+            enabled: yes
+      become: yes
+
+    - name: Утановка Docker-compose
+      block:
+        - name: Получение последней версии Docker-compose
+          uri:
+            url: https://api.github.com/repos/docker/compose/releases/latest
+            body_format: json
+          register: page
+
+        - name: Установка Docker-compose
+          get_url:
+            url: "https://github.com/docker/compose/releases/download/{{ page.json.tag_name }}/docker-compose-Linux-x86_64"
+            dest: /usr/local/bin/docker-compose
+            mode: 0755
+      become: yes
+    - name: Добавление пользователя в группу
+      block:
+        - name: Добавление пользователя в группу Docker
+          user:
+            name: vagrant
+            groups: docker
+            append: yes
+
+        - name: Перезагрузка
+          reboot:
+
+      block:
+        - name: Копирование репозитория
+          shell: git clone https://github.com/vadimbeznosenko/react-redux-realworld-example-app.git
+        
+        - name: Собираем образ
+          shell: docker build /home/vagrant/react-redux-realworld-example-app/
+          
+        - name: Собираем образ
+          shell: docker build -t project /home/vagrant/react-redux-realworld-example-app/
+          
+        - name: Собираем контейнер
+          shell: docker run -d -p 4100:4100 project
+
+        - name: Делаем curl 
+          shell: curl 127.0.0.1:4100
+          ignore_errors: yes
+      become: yes
+
+    - name: Установливаем vscode 
+      block:
+        - name: Копируюем последнюю домашку по пайтону
+          shell: git clone https://github.com/vadimbeznosenko/hilel_homwork.git
+
+        - name: Установливаем ключ
+          shell: wget -q https://packages.microsoft.com/keys/microsoft.asc -O- | sudo apt-key add -
+        - name: install VS Code (apt)
+          shell: add-apt-repository "deb [arch=amd64] https://packages.microsoft.com/repos/vscode stable main"
+        
+        - name: Обновляем cache
+          apt:
+            update_cache: yes
+            
+        - name: Устанавливаем VS Code
+          shell: apt install code -y
+      become: yes
+
+    - name: Отрываем проект 
+      block:
+        - name: открываем в vs code
+          shell: code ~/hilel_homwork/8/
+          
+    - name: Установливаем extension
+      block:
+        - name: Установливаем extension ansible
+          shell: code --install-extension redhat.ansible
+
+        - name: Установливаем extension python
+          shell: code --install-extension ms-python.python
+
+        - name: Установливаем extension todo
+          shell: code --install-extension Gruntfuggly.todo-tree
+
+

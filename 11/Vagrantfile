@@ -1,0 +1,22 @@
+VAGRANTFILE_API_VERSION = "2"
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+# Use the same key for each machine
+#  config.ssh.insert_key = false
+
+  config.vm.define "linux1" do |vm1|
+    vm1.vm.box = "bento/ubuntu-20.04"
+    vm1.vm.network "public_network", ip: "192.168.31.10", bridge: "wlp2s0"
+    vm1.vm.network "forwarded_port", guest: 22, host: 2209
+    vm1.vm.network "forwarded_port", guest: 3306, host: 3306
+#    vm1.vm.synced_folder "/home/sax/data/", "/home/vagrant/data"
+    vm1.vm.hostname = "linux1"
+    vm1.vm.provider "virtualbox" do |vb|
+      vb.customize ["modifyvm", :id, "--memory", "3000"]
+      vb.customize ["modifyvm", :id, "--cpus", "2"]
+#      vb.customize ["modifyvm", :id, "--vram", "16"]
+#    vm1.vm.provision "file", source: "~/.ssh/id_rsa.pub", destination: "~/.ssh/authorized_keys"
+    vm1.vm.provision "ansible", playbook: "config.yml" , inventory_path: "hosts.ini"
+    end
+	end
+end

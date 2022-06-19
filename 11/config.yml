@@ -1,0 +1,108 @@
+---
+- name: Preconfig
+  hosts: linux1
+  tasks:
+    - name: Утановка Docker
+      block:
+        - name: Добавляем universe
+          apt_repository:
+            repo: "deb http://us.archive.ubuntu.com/ubuntu/ {{ ansible_distribution_release }} universe"
+            state: present
+
+        - name: Установка дополнительных пакетов
+          apt:
+            name:
+              - apt-transport-https
+              - ca-certificates
+              - curl
+              - gnupg
+              - lsb-release
+              - git
+              - curl
+              - software-properties-common
+              - wget
+              - libasound2
+              - python3-docker
+            update-cache: yes
+            cache_valid_time: 86400
+
+        - name: Добавление ключа Docker
+          apt_key:
+            url: https://download.docker.com/linux/ubuntu/gpg
+            state: present
+
+        - name: Установка стабильного репозитория
+          shell: add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+
+       
+        - name: Обновляем cache
+          apt:
+            update_cache: yes
+        - name: Установка Docker
+          apt:
+            name: 
+              - docker-ce
+              - docker-ce-cli
+              - containerd.io
+#               -docker-compose-plugin
+            update-cache: yes
+
+        - name: Проверка что Docker установлен и перезагружен
+          service:
+            name: docker
+            state: restarted
+            enabled: yes
+      become: yes
+
+    - name: Утановка Docker-compose
+      block:
+        - name: Получение последней версии Docker-compose
+          uri:
+            url: https://api.github.com/repos/docker/compose/releases/latest
+            body_format: json
+          register: page
+
+        - name: Установка Docker-compose
+          get_url:
+            url: "https://github.com/docker/compose/releases/download/{{ page.json.tag_name }}/docker-compose-Linux-x86_64"
+            dest: /usr/local/bin/docker-compose
+            mode: 0755
+      become: yes
+    - name: Добавление пользователя в группу
+      block:
+        - name: Добавление пользователя в группу Docker
+          user:
+            name: vagrant
+            groups: docker
+            append: yes
+      
+        - name: Перезагрузка
+          reboot:
+      become: yes
+    - name: Деплой контейнера и запуск Mysql
+      block:
+        - name: Развертывание контейнера
+          community.docker.docker_container:
+            name: db_data
+            image: mysql:5.7
+            command: sleep infinity
+            state: started
+            ports:
+             - "3306:3306"
+            env:
+             MYSQL_ROOT_PASSWORD: wordpress
+             MYSQL_ROOT_HOST: '172.17.0.1'
+        - name: Запуск mysql
+          community.docker.docker_container_exec:
+            container: db_data
+            command: service mysql start
+            chdir: /root
+        - name: создаем базу Mysql
+          command: docker exec -it db_data mysql -uroot -e "create database library;"
+        - name: сщздаем пользователя
+          command: docker exec -it db_data mysql -uroot -e "grant select on library.* to kent@172.17.0.1 identified by '1';"
+          
+
+
+      
+

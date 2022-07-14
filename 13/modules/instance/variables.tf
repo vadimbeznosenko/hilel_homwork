@@ -22,5 +22,6 @@ variable "https_protocol" {
 
 variable "instance_cout" {
   description = "list users"
+  type = list
   default = ["dev", "prod"]
 }

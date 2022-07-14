@@ -7,6 +7,6 @@ curl -L "https://github.com/docker/compose/releases/download/1.29.2/docker-compo
 chmod +x /usr/bin/docker-compose
 yum install git -y
 git clone https://github.com/vadimbeznosenko/react-redux-realworld-example-app.git
-cd /home/2c-user/react-redux-realworld-example-app/
+cd /home/ec2-user/react-redux-realworld-example-app/
 docker-compose up --build .
 
